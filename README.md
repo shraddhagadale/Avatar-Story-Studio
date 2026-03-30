@@ -81,28 +81,6 @@ Choices follow a deliberate A/B/C risk gradient: safe → balanced → bold. Thi
 ### Character extraction
 A separate low-temperature (`temp=0.0`) call with `response_format={"type": "json_object"}` runs after each AI turn. The model extracts named characters and returns structured JSON. This is cheap (~50 tokens) and handles edge cases (nicknames, titles, introduced-then-renamed characters) that regex cannot.
 
----
-
-## Bonus Features
-
-- **👥 Live Character Tracker** — auto-extracts named characters via a dedicated LLM call after each turn; displayed in the sidebar with expandable descriptions
-- **↩️ Undo Last Turn** — pops the last AI response (and the user input that triggered it) from history; clean state reset
-- **📥 Export as Markdown** — one-click download of the full story as a formatted `.md` file
-- **⏱️ Rate limit handling** — exponential backoff retry (1s → 2s → 4s) with a user-friendly message when the free tier limit is hit
-- **🎨 Temperature slider** — live control over AI creativity, adjustable mid-story
-
----
-
-## What Didn't Work Well At First
-
-**Problem:** The initial system prompt was generic. On long stories, the model would occasionally drift — using a character's wrong name, forgetting an established ability, or shifting narrative voice between turns.
-
-**Fix:** Added explicit genre-specific rule sets (6 different rulesets, not one generic prompt) and injected the extracted character list into every system prompt rebuild. The model now has a "story bible" reminder on every single call, not just the first one. Consistency improved significantly after this change.
-
-**Second issue:** The branching choices prompt would sometimes produce partial continuations instead of clean option descriptions. Fixed with the explicit directive: *"Do NOT write the continuation for any choice — only the one-sentence description."*
-
----
-
 ## What I'd Improve With Another Day
 
 1. **Summarisation for very long stories** — Instead of trimming oldest segments, use a second LLM call to compress old chapters into a structured "story recap" block. This preserves continuity while controlling token usage.
