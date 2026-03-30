@@ -6,7 +6,7 @@ UI layer only: reads from session_state, calls helpers, updates state.
 import streamlit as st
 from groq import RateLimitError, APIConnectionError
 
-from config import GENRES, TOKEN_WARN_THRESHOLD
+from config import GENRES, GENRE_RULES, TOKEN_WARN_THRESHOLD
 from context_manager import build_messages, get_full_story_text, estimate_tokens
 from llm import generate_opening, stream_continuation, get_choices_response, extract_characters
 from prompts import build_system_prompt, CHOICES_INSTRUCTION
@@ -15,10 +15,10 @@ from utils import genre_badge, parse_choices, export_to_markdown, safe_filename
 # ── Page config ───────────────────────────────────────────────────────────────
 
 st.set_page_config(
-    page_title="Story Builder · myAvatar",
+    page_title="Story Weaver · myAvatar",
     page_icon="📖",
     layout="wide",
-    initial_sidebar_state="expanded",
+
 )
 
 # ── Styles ────────────────────────────────────────────────────────────────────
@@ -85,6 +85,7 @@ st.markdown("""
   }
 
   /* ── Hide Streamlit chrome ───────────────────────────────────── */
+  [data-testid="stHeader"]     { display: none !important; }
   [data-testid="stToolbar"]    { display: none !important; }
   [data-testid="stDecoration"] { display: none !important; }
   footer                       { display: none !important; }
@@ -94,17 +95,22 @@ st.markdown("""
   .block-container {
     max-width: 900px !important;
     padding-top: 0.5rem !important;
-    padding-bottom: 1.5rem !important;
+    padding-bottom: 1rem !important;
     background: transparent !important;
   }
-  /* Tighten Streamlit's default inter-element gap */
-  [data-testid="stVerticalBlock"] > [data-testid="stVerticalBlock"] {
-    gap: 0.25rem !important;
+  /* Tighten Streamlit's default inter-element gap in the main content area */
+  [data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"] > div:has(.story-block),
+  [data-testid="stAppViewContainer"] [data-testid="stVerticalBlock"] > div:has(.user-block) {
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
   }
-  /* Remove extra margin Streamlit adds around element containers */
-  .element-container { margin-bottom: 0 !important; }
 
   /* ── Typography ──────────────────────────────────────────────── */
+  h1, h2, h3, h4,
+  [data-testid="stMarkdownContainer"] h1,
+  [data-testid="stMarkdownContainer"] h2 {
+    font-family: 'Inter', sans-serif !important;
+  }
   h1 {
     font-size: 2rem !important;
     font-weight: 800 !important;
@@ -126,9 +132,9 @@ st.markdown("""
 
   /* ── Hero ────────────────────────────────────────────────────── */
   .ma-hero {
-    padding: 0.75rem 0 0.75rem 0;
+    padding: 0.6rem 0 0.5rem 0;
     border-bottom: 1px solid rgba(226,232,240,0.5);
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
     background: transparent;
   }
   .ma-hero h1 {
@@ -152,7 +158,7 @@ st.markdown("""
     padding: 1.25rem 1.5rem;
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-card);
-    margin-bottom: 1rem;
+    margin-bottom: 0.6rem;
     transition: var(--transition);
   }
   .ma-card:hover {
@@ -173,36 +179,26 @@ st.markdown("""
     line-height: 1.6;
   }
 
-  /* ── Genre selector — styled buttons as cards ───────────────── */
-  .genre-selector .stButton > button {
-    font-family: 'Inter', sans-serif !important;
-    background: var(--bg-card) !important;
-    backdrop-filter: blur(16px) !important;
-    -webkit-backdrop-filter: blur(16px) !important;
-    border: 1.5px solid var(--border) !important;
-    border-radius: 12px !important;
-    padding: 18px 8px 14px 8px !important;
-    text-align: center !important;
-    font-size: 22px !important;
-    font-weight: 500 !important;
-    color: var(--text-primary) !important;
-    transition: var(--transition) !important;
-    min-height: 80px !important;
-    line-height: 1.3 !important;
-    white-space: pre-wrap !important;
+  /* ── Info column wrapper — subtle lavender tint ─────────────── */
+  .info-col {
+    background: rgba(237,233,251,0.25);
+    border-radius: 16px;
+    padding: 4px 4px;
   }
-  .genre-selector .stButton > button:hover {
-    border-color: rgba(167,139,250,0.6) !important;
-    box-shadow: var(--shadow-hover) !important;
-    transform: translateY(-2px) !important;
-    background: rgba(255,255,255,0.85) !important;
+
+  /* ── Selected Genre card — high visual weight ────────────────── */
+  .genre-card-info {
+    border-left: 3px solid rgba(168,85,247,0.55) !important;
+    background: rgba(168,85,247,0.05) !important;
   }
-  /* Selected state — primary button style overridden for genre cards */
-  .genre-selector .stButton > button[kind="primary"] {
-    background: rgba(168,85,247,0.10) !important;
-    border-color: #A855F7 !important;
-    box-shadow: 0 0 0 3px rgba(168,85,247,0.15) !important;
-    color: var(--text-primary) !important;
+
+  /* ── How It Works card — receded, supporting context ─────────── */
+  .how-it-works-card {
+    background: rgba(255,255,255,0.45) !important;
+    box-shadow: none !important;
+  }
+  .how-it-works-card .ma-card-label {
+    color: #94A3B8 !important;
   }
 
   /* ── Story display — AI paragraphs ──────────────────────────── */
@@ -211,14 +207,21 @@ st.markdown("""
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
     border-radius: var(--radius-card);
-    padding: 1.75rem 2rem;
+    padding: 1.1rem 1.4rem;
     border: 1px solid var(--glass-border);
     box-shadow: var(--shadow-card);
-    margin-bottom: 0.75rem;
+    margin-bottom: 0.5rem;
     font-size: 16px;
-    line-height: 1.95;
+    line-height: 1.65;
     color: var(--text-primary);
   }
+  /* Override global p rule — child paragraphs inside story block */
+  .story-block p {
+    line-height: 1.65 !important;
+    font-size: 16px !important;
+    margin-bottom: 0.6rem;
+  }
+  .story-block p:last-child { margin-bottom: 0; }
 
   /* ── Story display — user contributions ─────────────────────── */
   .user-block {
@@ -227,8 +230,8 @@ st.markdown("""
     -webkit-backdrop-filter: blur(12px);
     border-left: 2px solid rgba(167,139,250,0.5);
     border-radius: 0 8px 8px 0;
-    padding: 0.6rem 1.2rem;
-    margin-bottom: 0.75rem;
+    padding: 0.4rem 1rem;
+    margin-bottom: 0.4rem;
     color: var(--text-muted);
     font-style: italic;
     font-size: 13px;
@@ -345,6 +348,18 @@ st.markdown("""
     color: var(--text-primary) !important;
     transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
   }
+  /* Placeholder — consistent across all inputs and textareas */
+  .stTextInput input::placeholder,
+  .stTextArea textarea::placeholder {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 13px !important;
+    color: #9CA3AF !important;
+    font-style: italic !important;
+  }
+
+  /* Re-enable resize handle — Streamlit strips it by default */
+  .stTextArea textarea { resize: vertical !important; min-height: 80px !important; }
+
   .stTextInput input:focus,
   .stTextArea textarea:focus {
     border-color: var(--navy) !important;
@@ -359,6 +374,7 @@ st.markdown("""
     border-radius: var(--radius-input) !important;
     background: rgba(255,255,255,0.8) !important;
     box-shadow: var(--shadow-input) !important;
+    cursor: pointer !important;
   }
 
   /* ── Slider ──────────────────────────────────────────────────── */
@@ -372,7 +388,7 @@ st.markdown("""
     border-right: 1px solid rgba(226,232,240,0.5) !important;
   }
   [data-testid="stSidebar"] .block-container {
-    padding-top: 1.5rem !important;
+    padding-top: 0.75rem !important;
     max-width: 100% !important;
   }
 
@@ -386,7 +402,7 @@ st.markdown("""
   }
 
   /* ── Divider ─────────────────────────────────────────────────── */
-  hr { border-color: var(--border) !important; margin: 1.25rem 0 !important; }
+  hr { border-color: var(--border) !important; margin: 0.25rem 0 !important; }
 
   /* ── Alerts ──────────────────────────────────────────────────── */
   .stAlert { border-radius: var(--radius-card) !important; }
@@ -416,11 +432,124 @@ st.markdown("""
     display: block;
   }
 
+  /* ── Creativity slider range hint ───────────────────────────── */
+  .slider-hint {
+    display: flex;
+    justify-content: space-between;
+    margin-top: -28px;
+    padding: 0 2px;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.2px;
+  }
+
   /* ── Caption / muted ─────────────────────────────────────────── */
   .stCaption, small {
     color: var(--text-muted) !important;
     font-size: 12px !important;
   }
+
+  /* ── Left info panel — sticky, always visible ───────────────── */
+  .info-panel {
+    position: sticky;
+    top: 1.5rem;
+    max-height: calc(100vh - 3rem);
+    overflow-y: auto;
+    padding: 1.25rem;
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
+  }
+  .info-panel-section { margin-bottom: 0.25rem; }
+  .info-panel-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 1rem 0;
+  }
+  .info-panel-rules {
+    font-size: 12px;
+    color: #374151;
+    line-height: 1.6;
+    margin-top: 0.4rem;
+  }
+  .info-panel-char {
+    margin-top: 0.75rem;
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+  .info-panel-char-desc {
+    font-size: 11px;
+    color: #6B7280;
+    margin-top: 0.2rem;
+    line-height: 1.5;
+  }
+  .info-panel-empty {
+    font-size: 12px;
+    color: #9CA3AF;
+    margin-top: 0.4rem;
+  }
+
+  /* ── Story screen header — title + genre + actions in one row ── */
+  .story-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.4rem 0 0.3rem 0;
+    margin-bottom: 0;
+  }
+  .story-header-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+  .story-header-genre {
+    display: inline-block;
+    background: rgba(237,233,251,0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.3px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+  .story-header-spacer { flex: 1; }
+  .story-header-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 5px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+  }
+  .story-header-action:hover {
+    background: rgba(237,233,251,0.5);
+    border-color: var(--navy);
+    color: var(--text-primary);
+  }
+
+  /* ── Hide Streamlit input instruction hint ───────────────────── */
+  [data-testid="InputInstructions"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -496,6 +625,23 @@ GENRE_META = {
 }
 
 
+@st.dialog("Start a new story?")
+def _confirm_new_story_dialog():
+    st.warning("This will clear your current story and cannot be undone.")
+    c1, c2 = st.columns(2)
+    with c1:
+        if st.button("Yes, start fresh", type="primary", use_container_width=True):
+            for k in ["story_started", "title", "genre", "hook", "segments",
+                      "characters", "pending_choices", "undo_stack", "error_msg",
+                      "_confirm_new_story"]:
+                st.session_state.pop(k, None)
+            st.rerun()
+    with c2:
+        if st.button("Cancel", use_container_width=True):
+            st.session_state.pop("_confirm_new_story", None)
+            st.rerun()
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # SETUP SCREEN
 # ─────────────────────────────────────────────────────────────────────────────
@@ -504,9 +650,10 @@ if not st.session_state.story_started:
 
     # Hero — gradient heading, myavatar.ai style
     st.markdown("""
-    <div class="ma-hero">
-        <h1>📖 <span class="avatar-gradient">Story Builder</span></h1>
-        <p>Collaborate with AI to craft stories that remember every character, plot twist, and world rule — turn after turn.</p>
+    <div class="ma-hero" style="text-align:center">
+        <h1 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px">
+            <span class="avatar-gradient">Story Weaver</span>
+        </h1>
     </div>
     """, unsafe_allow_html=True)
 
@@ -517,36 +664,21 @@ if not st.session_state.story_started:
         st.markdown('<span class="ma-label">Story Title</span>', unsafe_allow_html=True)
         title = st.text_input(
             "Story Title",
-            placeholder="The Last Kingdom of Ember…",
+            placeholder="Example: The Last Signal from Meridian Station",
             max_chars=100,
             label_visibility="collapsed",
         )
 
-        # Genre — visual 3×2 card grid (all options scannable at once)
-        st.markdown('<span class="ma-label" style="margin-bottom:10px;display:block">Genre</span>', unsafe_allow_html=True)
-        st.markdown('<div class="genre-selector">', unsafe_allow_html=True)
-        g_cols = st.columns(3, gap="small")
-        for idx, g in enumerate(GENRES):
-            meta = GENRE_META[g]
-            is_selected = st.session_state.genre == g
-            with g_cols[idx % 3]:
-                # Emoji on first line, name on second — button renders multi-line
-                btn_label = f"{meta['emoji']}\n{g}"
-                if st.button(
-                    btn_label,
-                    key=f"genre_btn_{g}",
-                    use_container_width=True,
-                    help=meta["desc"],
-                    type="primary" if is_selected else "secondary",
-                ):
-                    st.session_state.genre = g
-                    st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-        # Sync the local variable for this render
-        genre = st.session_state.genre
-
-        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+        # Genre — dropdown
+        st.markdown('<span class="ma-label">Genre</span>', unsafe_allow_html=True)
+        genre = st.selectbox(
+            "Genre",
+            options=GENRES,
+            index=GENRES.index(st.session_state.genre),
+            format_func=lambda g: f"{GENRE_META[g]['emoji']} {g}",
+            label_visibility="collapsed",
+        )
+        st.session_state.genre = genre
 
         # Opening hook
         st.markdown('<span class="ma-label">Opening Hook</span>', unsafe_allow_html=True)
@@ -554,22 +686,30 @@ if not st.session_state.story_started:
             "Opening Hook",
             placeholder=(
                 "Describe your world, characters, or the opening situation.\n\n"
-                "Example: A disgraced knight discovers a map leading to the tomb of the "
-                "last dragon, hidden beneath the city she once swore to protect."
+                "Example: A lone communications officer at the edge of the solar system "
+                "intercepts a distress signal in her own voice, from a frequency "
+                "decommissioned 40 years ago."
             ),
-            height=130,
+            height=120,
             label_visibility="collapsed",
         )
 
-        # Creativity slider — inline with label
-        temperature = st.slider(
+        # Creativity slider — compact inline range hint always visible
+        st.slider(
             "🎨 Creativity",
             min_value=0.1, max_value=1.5, value=st.session_state.temperature, step=0.1,
-            help="0.1–0.5 = focused & consistent · 0.6–0.9 = balanced (recommended) · 1.0–1.5 = experimental",
+            help="Drag to control how adventurous the AI is. Balanced (0.7–0.9) is the sweet spot for most stories.",
+            key="setup_creativity",
+            on_change=lambda: setattr(st.session_state, 'temperature', st.session_state.setup_creativity),
         )
-        st.session_state.temperature = temperature
+        st.markdown("""
+        <div class="slider-hint">
+          <span>Focused</span>
+          <span>Balanced&nbsp;✦</span>
+          <span>Wild</span>
+        </div>
+        """, unsafe_allow_html=True)
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
         if st.button("Start the Story →", type="primary", use_container_width=True):
             if not title.strip():
                 st.error("Please enter a story title.")
@@ -578,7 +718,7 @@ if not st.session_state.story_started:
             else:
                 with st.spinner("Crafting your opening…"):
                     try:
-                        opening = generate_opening(title.strip(), genre, hook.strip(), temperature)
+                        opening = generate_opening(title.strip(), genre, hook.strip(), st.session_state.temperature)
                         st.session_state.title = title.strip()
                         st.session_state.genre = genre
                         st.session_state.hook = hook.strip()
@@ -593,22 +733,24 @@ if not st.session_state.story_started:
         _show_and_clear_error()
 
     with col_guide:
-        # Single dynamic card — shows selected genre details only
         g = st.session_state.genre
         meta = GENRE_META[g]
+        # Top offset: pushes cards down to align with the Genre picker row.
+        # Story Title label + input ≈ 80px before Genre label appears.
         st.markdown(f"""
-        <div class="ma-card" style="margin-bottom:1rem">
-          <div class="ma-card-label">Selected Genre</div>
-          <div style="font-size:2rem;margin-bottom:8px;line-height:1">{meta['emoji']}</div>
-          <div style="font-size:16px;font-weight:700;margin-bottom:6px">{g}</div>
-          <div class="ma-card-value">{meta['desc']}</div>
-        </div>
-        <div class="ma-card">
-          <div class="ma-card-label">How it works</div>
-          <div class="ma-card-value">
-            The AI receives your <b>full story history</b> on every turn —
-            no summarisation, no forgetting. Characters, world rules, and
-            plot threads stay consistent no matter how long it grows.
+        <div class="info-col">
+          <!-- Selected Genre — high visual weight, purple accent, reacts to picks -->
+          <div class="ma-card genre-card-info">
+            <div class="ma-card-label">Selected Genre</div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <span style="font-size:1.5rem;line-height:1">{meta['emoji']}</span>
+              <span style="font-size:15px;font-weight:700;color:var(--text-primary)">{g}</span>
+            </div>
+            <div class="ma-card-value">{meta['desc']}</div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+              <div class="ma-card-label" style="margin-bottom:6px">Story Rules</div>
+              <div class="ma-card-value" style="font-size:12px;color:#374151">{GENRE_RULES[g]}</div>
+            </div>
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -620,110 +762,89 @@ if not st.session_state.story_started:
 
 else:
 
-    # ── Sidebar ───────────────────────────────────────────────────────────────
-    with st.sidebar:
-        # Story identity
-        st.markdown(f"""
-        <div style="margin-bottom:0.25rem">
-          <span class="ma-badge">{genre_badge(st.session_state.genre)}</span>
-        </div>
-        <div style="font-size:15px;font-weight:700;margin-top:8px;line-height:1.3;color:var(--text-primary)">
-          {st.session_state.title}
-        </div>
-        """, unsafe_allow_html=True)
-        st.divider()
-
-        # Creativity slider
-        st.session_state.temperature = st.slider(
-            "🎨 Creativity",
-            min_value=0.1, max_value=1.5,
-            value=st.session_state.temperature,
-            step=0.1,
-            help="Adjust anytime — takes effect on the next AI turn.",
-        )
-
-        # Token usage
-        story_text = get_full_story_text(st.session_state.segments)
-        est_tokens = estimate_tokens(story_text)
-        st.caption(f"~{est_tokens:,} tokens · {len(st.session_state.segments)} turns")
-        if est_tokens > TOKEN_WARN_THRESHOLD:
-            st.warning("Story is getting long — oldest turns may be trimmed.")
-
-        st.divider()
-
-        # Character tracker
-        st.markdown('<div class="ma-card-label" style="padding:0 0 8px 0">👥 Characters</div>', unsafe_allow_html=True)
-        if st.session_state.characters:
-            for char in st.session_state.characters:
-                with st.expander(char.get("name", "Unknown")):
-                    st.caption(char.get("description", ""))
-        else:
-            st.caption("Characters appear here as they're introduced.")
-
-        st.divider()
-
-        # Actions — full-width stacked (easier to tap, clearer labels)
-        can_undo = len(st.session_state.segments) > 1
-        if st.button("↩  Undo Last Turn", use_container_width=True, disabled=not can_undo,
-                     help="Remove the last AI turn and your prompt that triggered it."):
-            popped = st.session_state.segments.pop()
-            st.session_state.undo_stack.append(popped)
-            if (st.session_state.segments
-                    and st.session_state.segments[-1]["role"] == "user"):
-                st.session_state.undo_stack.append(st.session_state.segments.pop())
-            st.session_state.pending_choices = []
-            st.rerun()
-
-        md_content = export_to_markdown(
-            st.session_state.title,
-            st.session_state.genre,
-            st.session_state.segments,
-        )
-        st.download_button(
-            "↓  Export as Markdown",
-            data=md_content,
-            file_name=f"{safe_filename(st.session_state.title)}.md",
-            mime="text/markdown",
-            use_container_width=True,
-            help="Download your story as a formatted .md file.",
-        )
-
-        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-        if st.button("＋  New Story", use_container_width=True):
-            for k in ["story_started", "title", "genre", "hook", "segments",
-                      "characters", "pending_choices", "undo_stack", "error_msg"]:
-                st.session_state.pop(k, None)
-            st.rerun()
-
     # ── Main content ──────────────────────────────────────────────────────────
-
-    # Page header — smaller than setup hero
-    st.markdown(f"""
-    <div style="display:flex;align-items:center;gap:12px;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid rgba(226,232,240,0.4)">
-      <h2 style="margin:0;font-size:1.5rem!important">📖 {st.session_state.title}</h2>
-      <span class="ma-badge">{genre_badge(st.session_state.genre)}</span>
-    </div>
-    """, unsafe_allow_html=True)
 
     _show_and_clear_error()
 
-    # Scrollable story history — input area stays fixed below, history scrolls above
-    story_container = st.container(height=520, border=False)
-    with story_container:
-        for seg in st.session_state.segments:
-            if seg["role"] == "assistant":
-                st.markdown(f'<div class="story-block">{seg["content"]}</div>',
-                            unsafe_allow_html=True)
-            elif seg["content"] not in ("Continue the story.", ""):
-                st.markdown(f'<div class="user-block">✏️ {seg["content"]}</div>',
-                            unsafe_allow_html=True)
+    # Dialog trigger — fires when New Story button was clicked
+    if st.session_state.get("_confirm_new_story"):
+        _confirm_new_story_dialog()
 
-    # Streaming placeholder — lives outside the scroll container so it appears below
-    stream_placeholder = st.empty()
+    # Token warning — only when approaching the limit
+    story_text = get_full_story_text(st.session_state.segments)
+    est_tokens = estimate_tokens(story_text)
+    if est_tokens > TOKEN_WARN_THRESHOLD:
+        st.warning(f"Story is getting long (~{est_tokens:,} tokens) — oldest turns may be trimmed.")
+
+    # ── Story header — title + genre + export + new story on one line ────────
+    _genre_meta = GENRE_META[st.session_state.genre]
+    _export_content = export_to_markdown(
+        st.session_state.title,
+        st.session_state.genre,
+        st.session_state.segments,
+    )
+    _safe_fn = safe_filename(st.session_state.title)
+
+    st.markdown("""
+    <style>
+      /* Keep header buttons on one line */
+      [data-testid="stHorizontalBlock"] [data-testid="stDownloadButton"] button,
+      [data-testid="stHorizontalBlock"] [data-testid="stBaseButton-secondary"] {
+        white-space: nowrap !important;
+      }
+    </style>
+    """  , unsafe_allow_html=True)
+
+    with st.container():
+        hdr_title, hdr_export, hdr_new = st.columns([4, 1.5, 1.5])
+        with hdr_title:
+            st.markdown(f"""
+            <div class="story-header">
+              <span class="story-header-title">{st.session_state.title}</span>
+              <span class="story-header-genre">{_genre_meta['emoji']} {st.session_state.genre}</span>
+            </div>
+            """, unsafe_allow_html=True)
+        with hdr_export:
+            st.download_button(
+                "📥 Export",
+                data=_export_content,
+                file_name=f"{_safe_fn}.md",
+                mime="text/markdown",
+                use_container_width=True,
+            )
+        with hdr_new:
+            if st.button("＋ New", use_container_width=True, key="new_story_btn"):
+                st.session_state._confirm_new_story = True
+                st.rerun()
 
     st.divider()
 
-    # ── Choice mode ───────────────────────────────────────────────────────────
+    # ── Story context — collapsible rules + characters ────────────────────────
+    _char_items_md = "\n".join(
+        f"- **{c.get('name', 'Unknown')}** — {c.get('description', '')}"
+        for c in st.session_state.characters
+    ) or "_None yet._"
+
+    with st.expander("📋 Story Rules & Characters", expanded=False):
+        rules_col, chars_col = st.columns(2)
+        with rules_col:
+            st.markdown(f"**Story Rules**\n\n{GENRE_RULES[st.session_state.genre]}")
+        with chars_col:
+            st.markdown(f"**Characters**\n\n{_char_items_md}")
+
+    # ── Story segments — natural page flow ────────────────────────────────────
+    for seg in st.session_state.segments:
+        if seg["role"] == "assistant":
+            st.markdown(f'<div class="story-block">{seg["content"]}</div>',
+                        unsafe_allow_html=True)
+        elif seg["content"] not in ("Continue the story.", ""):
+            st.markdown(f'<div class="user-block">✏️ {seg["content"]}</div>',
+                        unsafe_allow_html=True)
+
+    # Placeholder — only visible while streaming, collapses when empty
+    stream_placeholder = st.empty()
+
+    # ── Choice mode ───────────────────────────────────────────────────────
     if st.session_state.pending_choices:
         st.markdown("""
         <div class="choices-header">What happens next?</div>
@@ -738,16 +859,12 @@ else:
 
         for i, choice_text in enumerate(st.session_state.pending_choices):
             letter = ["A", "B", "C"][i]
-            risk, badge_cls = risk_labels[i]
-            # Render badge HTML above button via markdown
-            st.markdown(
-                f'<span class="choice-badge {badge_cls}">{risk}</span>',
-                unsafe_allow_html=True,
-            )
+            risk, _ = risk_labels[i]
             if st.button(
                 f"{letter}.  {choice_text}",
                 key=f"choice_{i}",
                 use_container_width=True,
+                help=f"Risk level: {risk}",
             ):
                 st.session_state.segments.append(
                     {"role": "user", "content": f"I choose: {choice_text}"}
@@ -779,18 +896,37 @@ else:
 
                 st.rerun()
 
-    # ── Normal input mode ─────────────────────────────────────────────────────
+    # ── Normal input mode ─────────────────────────────────────────────────
     else:
+        st.markdown('<span class="ma-label">Steer the story</span>', unsafe_allow_html=True)
         user_input = st.text_area(
             "Steer the story",
             placeholder="Add a line or two to guide the next turn — or leave blank and let the AI decide…",
-            height=88,
-            label_visibility="visible",
+            height=80,
+            label_visibility="collapsed",
             key="user_text_input",
         )
 
-        # Choices (secondary) left · Continue (primary CTA) right — standard UX flow
-        col_choices, col_continue = st.columns(2, gap="small")
+        # Creativity slider — above action buttons
+        st.slider(
+            "🎨 Creativity",
+            min_value=0.1, max_value=1.5,
+            value=st.session_state.temperature,
+            step=0.1,
+            help="Drag to control how adventurous the AI is. Balanced (0.7–0.9) is the sweet spot.",
+            key="story_creativity",
+            on_change=lambda: setattr(st.session_state, 'temperature', st.session_state.story_creativity),
+        )
+        st.markdown("""
+        <div class="slider-hint">
+          <span>Focused</span>
+          <span>Balanced&nbsp;✦</span>
+          <span>Wild</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # Action row: Choices · Continue · Undo — all on one line
+        col_choices, col_continue, col_undo = st.columns([3, 3, 2], gap="small")
 
         with col_choices:
             if st.button("🎭  Give Me Choices", use_container_width=True):
@@ -859,3 +995,16 @@ else:
                     _handle_llm_error(e)
 
                 st.rerun()
+
+        with col_undo:
+            can_undo = len(st.session_state.segments) > 1
+            if st.button("↩ Undo", use_container_width=True, disabled=not can_undo,
+                         help="Remove the last AI turn and your prompt that triggered it."):
+                popped = st.session_state.segments.pop()
+                st.session_state.undo_stack.append(popped)
+                if (st.session_state.segments
+                        and st.session_state.segments[-1]["role"] == "user"):
+                    st.session_state.undo_stack.append(st.session_state.segments.pop())
+                st.session_state.pending_choices = []
+                st.rerun()
+

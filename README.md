@@ -1,94 +1,104 @@
 # Story Builder
 
-An AI-powered collaborative storytelling app built with Python, Streamlit, and Groq.
+Story Builder is an AI-assisted collaborative storytelling application built with Python, Streamlit, and Groq. It provides guided multi-turn narrative generation with consistency controls, character tracking, and interactive branching.
 
 ## Setup
 
 ```bash
-# 1. Clone / unzip the project
-cd story-builder
+# 1) Clone the repository and enter the app directory
+git clone <your-repo-url>
+cd <repo-name>/story-builder
 
-# 2. Install dependencies
+# 2) Install dependencies
 pip install -r requirements.txt
 
-# 3. Add your Groq API key
+# 3) Configure credentials
 cp .env.example .env
-# Edit .env and replace with your key from https://console.groq.com
+# Edit .env and set your Groq API key from https://console.groq.com
 
-# 4. Run
+# 4) Run the app
 streamlit run app.py
 ```
 
-The app opens at `http://localhost:8501`.
+The app starts at `http://localhost:8501`.
 
----
+## Model and Provider
 
-## Model & Provider
+- Model: `llama-3.3-70b-versatile`
+- Provider: Groq
 
-**Model:** `llama-3.3-70b-versatile` via **Groq**
+Groq is used for low-latency token streaming, which materially improves interactive writing workflows. The implementation is OpenAI-compatible, so provider changes remain low-friction.
 
-**Why Groq?**
-Groq's inference speed (~500 tokens/sec) makes the streaming feel like a real co-writer thinking in real time. Batch responses from slower providers feel broken by comparison. The free tier is generous enough for demos and the SDK is OpenAI-compatible, making it trivial to swap providers.
+`llama-3.3-70b-versatile` currently provides a strong quality and instruction-following balance for long-form creative writing plus structured tasks such as option generation and JSON extraction. For lower cost and faster responses, `llama-3.1-8b-instant` can be used as a direct replacement in `config.py`.
 
-**Why llama-3.3-70b-versatile?**
-Strong creative writing quality with good instruction-following for structured tasks (choice generation, JSON extraction). For faster/cheaper operation, `llama-3.1-8b-instant` is a drop-in swap in `config.py`.
+## Memory and Consistency Strategy
 
----
+The app uses full conversation history injection on every completion call. Each request includes:
 
-## Memory & Consistency Strategy
+1. Current system prompt
+2. Complete ordered story history (user and assistant turns)
+3. Current user action
 
-**Approach: Full history injection on every call.**
-
-Every API call receives the complete story history as a structured `messages` array (system + alternating user/assistant turns). The model sees everything that has happened — no retrieval, no summarisation, no lossy compression.
-
-```
-API call = system_prompt + all segments as messages + current user action
+```text
+API call = system prompt + story history + current action
 ```
 
-**Why full history?**
-- Perfect recall: the model cannot contradict earlier events because they're in context
-- Simple to reason about: what you see is what the model gets
-- Correct for this scale: Groq's 128K context window handles hundreds of story turns
+### Rationale
 
-**Context guard:**
-`context_manager.py` estimates tokens before each call (`len(text) // 4`). If the history approaches the token budget, oldest segments are trimmed. A warning appears in the sidebar when the story is getting long.
+- High continuity because prior events are always in context
+- Deterministic reasoning about model inputs
+- Appropriate for this project scale given Groq's context window
 
-**System prompt as consistency layer:**
-The system prompt is rebuilt on every call with the current genre rules and extracted character list. This means the model always has an up-to-date "story bible" — even if older segments get trimmed, the character descriptions persist.
+### Context Guard
 
----
+`context_manager.py` estimates token usage (`len(text) // 4`) before generation. When usage approaches the configured limit, oldest segments are trimmed and the UI displays a warning.
 
-## Prompt Engineering
+### Prompt Rebuild Policy
 
-### Main system prompt structure
-```
-Role + genre context
-↓
-Genre-specific rules (6 distinct rule sets)
-↓
-5 core consistency directives
-↓
-Known characters (dynamically injected, updated each turn)
-↓
-Writing style guide
-```
+The system prompt is rebuilt on each turn with genre constraints and the current extracted character set. This acts as a durable story contract even if older segments are trimmed for token control.
 
-### Branching choices
-The `CHOICES_INSTRUCTION` prompt is injected as a temporary user message — it never saves to the story segments. This keeps the story history clean while giving the model precise formatting instructions.
+## Prompting Design
 
-Choices follow a deliberate A/B/C risk gradient: safe → balanced → bold. This gives users meaningful agency rather than three equivalent options.
+### System Prompt Composition
 
-### Character extraction
-A separate low-temperature (`temp=0.0`) call with `response_format={"type": "json_object"}` runs after each AI turn. The model extracts named characters and returns structured JSON. This is cheap (~50 tokens) and handles edge cases (nicknames, titles, introduced-then-renamed characters) that regex cannot.
+The system prompt is structured in this order:
 
-## What I'd Improve With Another Day
+1. Role and genre context
+2. Genre-specific rule set
+3. Core consistency directives
+4. Known characters (dynamically injected)
+5. Writing style guidance
 
-1. **Summarisation for very long stories** — Instead of trimming oldest segments, use a second LLM call to compress old chapters into a structured "story recap" block. This preserves continuity while controlling token usage.
+### Branching Choices
 
-2. **Genre Remix** — A button to rewrite the latest paragraph in a completely different genre while preserving the plot. Interesting prompt engineering challenge.
+The choices instruction is injected as an ephemeral user message and is not persisted in story history. This keeps narrative context clean while enforcing strict output formatting.
 
-3. **Better streaming UX** — Add a "Stop generating" button mid-stream using Streamlit's `st.stop()` pattern.
+Choice generation follows a deliberate risk ladder (`A/B/C`: conservative, balanced, bold) to produce meaningfully different user paths.
 
-4. **Persistence** — Save stories to SQLite so users can resume across sessions. Streamlit's session state is ephemeral.
+### Character Extraction
 
-5. **Smarter character tracking** — Track relationship changes between characters turn-by-turn, not just their static descriptions.
+After each assistant turn, a separate low-temperature extraction call (`temp=0.0`) runs with `response_format={"type": "json_object"}`. This returns structured character metadata and is more reliable than regex-based extraction for aliases and renamed entities.
+
+## Features
+
+- Live character tracker in the sidebar with generated descriptions
+- Undo last turn to revert the latest user and assistant exchange
+- Export full story as Markdown
+- Exponential backoff handling for rate limits (1s, 2s, 4s)
+- Runtime temperature control for generation style
+
+## Lessons from Early Iterations
+
+Initial prompts were too generic. On longer stories, output drift appeared as naming inconsistencies, forgotten attributes, and tone shifts.
+
+This was mitigated by introducing explicit genre rule sets and injecting refreshed character context into every system prompt rebuild.
+
+A second issue was partial continuation output during choice generation. This was resolved by adding explicit constraints that require one-line option descriptions only.
+
+## Next Improvements
+
+1. Add long-context summarization to replace hard trimming with structured recap blocks
+2. Add genre remix capability for style transformations without plot loss
+3. Improve streaming UX with an explicit stop-generation control
+4. Persist stories in SQLite for session continuity
+5. Extend character tracking to include relationship evolution over time

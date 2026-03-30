@@ -1,0 +1,2 @@
+{"timestamp": "2026-03-31T15:13:02.534008", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.6, "genre": "Fantasy", "prompt_tokens": 148, "completion_tokens": 265, "total_tokens": 413, "latency_ms": 1253}
+{"timestamp": "2026-03-31T15:13:02.917309", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["the old lady"]}
