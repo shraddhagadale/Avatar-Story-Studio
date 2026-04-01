@@ -1,6 +1,6 @@
 # Story Weaver
 
-Story Builder is an AI-assisted collaborative storytelling application built with Python, Streamlit, and Groq. It provides guided multi-turn narrative generation with consistency controls, character tracking, and interactive branching.
+Story Weaver is an AI-assisted collaborative storytelling application built with Python, Streamlit, and Groq. It provides guided multi-turn narrative generation with consistency controls, character tracking, and interactive branching.
 
 ## Setup
 
