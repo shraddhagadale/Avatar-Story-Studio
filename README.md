@@ -29,76 +29,67 @@ The app starts at `http://localhost:8501`.
 
 Groq is used for low-latency token streaming, which materially improves interactive writing workflows. The implementation is OpenAI-compatible, so provider changes remain low-friction.
 
-`llama-3.3-70b-versatile` currently provides a strong quality and instruction-following balance for long-form creative writing plus structured tasks such as option generation and JSON extraction. For lower cost and faster responses, `llama-3.1-8b-instant` can be used as a direct replacement in `config.py`.
+`llama-3.3-70b-versatile` provides a strong balance of instruction-following and creative quality for both long-form narrative generation and structured tasks such as JSON character extraction.
+
+## Final Prompt
+
+The system prompt is rebuilt on every turn. This is the full template:
+
+```
+You are a masterful collaborative storyteller co-writing a {genre} story titled "{title}".
+
+GENRE: {GENRE}
+{genre-specific rules}
+
+CONSISTENCY RULES (follow these strictly):
+1. Never contradict any established fact, character name, ability, or event from the story so far.
+2. Maintain the narrative voice and tone set in the opening paragraph.
+3. Every continuation must flow naturally — no abrupt scene jumps without transition.
+4. When the user contributes text, treat it as story canon and build upon it.
+5. Respect cause-and-effect: consequences of earlier choices must persist.
+6. Do not introduce new characters, locations, or abilities without narrative grounding.
+
+KNOWN CHARACTERS (maintain these exactly):
+  - {name}: {description}
+
+WRITING STYLE:
+- Match the narrative voice and tense established in the opening paragraph
+- Vivid sensory details (sound, smell, texture — not just visuals)
+- Show don't tell: reveal character through action and dialogue
+- Each continuation: 1–2 paragraphs, approximately 150–250 words
+- Maintain consistent pacing with what has been established
+```
+
+The character block is dynamic — omitted on the first turn, then rebuilt after every assistant turn from a separate extraction call and injected into every subsequent prompt.
 
 ## Memory and Consistency Strategy
 
-The app uses full conversation history injection on every completion call. Each request includes:
-
-1. Current system prompt
-2. Complete ordered story history (user and assistant turns)
-3. Current user action
+Every API call receives the full conversation history in order:
 
 ```text
-API call = system prompt + story history + current action
+system prompt → story history (user + assistant turns) → current action
 ```
 
-### Rationale
+As the story grows, token usage is managed in three stages:
 
-- High continuity because prior events are always in context
-- Deterministic reasoning about model inputs
-- Appropriate for this project scale given Groq's context window
+1. **≥ 3,000 tokens** — UI warns the user the story is getting long
+2. **≥ 4,000 tokens** — oldest segments are summarized into a compact recap block and replaced. The summary is injected into the API context but never displayed to the user.
+3. **≥ 4,500 tokens** — hard trim as a last resort if summarization was insufficient
 
-### Context Guard
+This preserves plot memory rather than silently dropping early story events.
 
-`context_manager.py` estimates token usage (`len(text) // 4`) before generation. When usage approaches the configured limit, oldest segments are trimmed and the UI displays a warning.
+## Bonus Features
 
-### Prompt Rebuild Policy
+- **Live Character Tracker** — after every assistant turn, a separate low-temperature LLM call extracts named characters into a structured list, injected into every subsequent system prompt to prevent the model from forgetting or renaming them
+- **Undo Last AI Turn** — reverts the last user + assistant exchange without losing earlier story history
+- **Export as Markdown** — downloads the full story as a clean Markdown file
 
-The system prompt is rebuilt on each turn with genre constraints and the current extracted character set. This acts as a durable story contract even if older segments are trimmed for token control.
+## One Thing That Did Not Work Well
 
-## Prompting Design
+Rate limit handling initially used fixed exponential backoff (1s → 2s → 4s). This failed when Groq's required wait time exceeded the total backoff budget — retries would exhaust and the call would fail even though waiting a bit longer would have succeeded. The app would also silently freeze with no feedback to the user.
 
-### System Prompt Composition
+The fix was to read Groq's `retry-after` response header first — if Groq says wait 37 seconds, we wait exactly that. If the header isn't present, we fall back to exponential backoff (1s → 2s → 4s). If Groq wants us to wait more than 30 seconds, we stop retrying immediately and raise the exception — which surfaces a clear error to the user with the exact wait time, instead of silently freezing for minutes.
 
-The system prompt is structured in this order:
+## What I Would Improve Next
 
-1. Role and genre context
-2. Genre-specific rule set
-3. Core consistency directives
-4. Known characters (dynamically injected)
-5. Writing style guidance
-
-### Branching Choices
-
-The choices instruction is injected as an ephemeral user message and is not persisted in story history. This keeps narrative context clean while enforcing strict output formatting.
-
-Choice generation follows a deliberate risk ladder (`A/B/C`: conservative, balanced, bold) to produce meaningfully different user paths.
-
-### Character Extraction
-
-After each assistant turn, a separate low-temperature extraction call (`temp=0.0`) runs with `response_format={"type": "json_object"}`. This returns structured character metadata and is more reliable than regex-based extraction for aliases and renamed entities.
-
-## Features
-
-- Live character tracker in the sidebar with generated descriptions
-- Undo last turn to revert the latest user and assistant exchange
-- Export full story as Markdown
-- Exponential backoff handling for rate limits (1s, 2s, 4s)
-- Runtime temperature control for generation style
-
-## Lessons from Early Iterations
-
-Initial prompts were too generic. On longer stories, output drift appeared as naming inconsistencies, forgotten attributes, and tone shifts.
-
-This was mitigated by introducing explicit genre rule sets and injecting refreshed character context into every system prompt rebuild.
-
-A second issue was partial continuation output during choice generation. This was resolved by adding explicit constraints that require one-line option descriptions only.
-
-## Next Improvements
-
-1. Add long-context summarization to replace hard trimming with structured recap blocks
-2. Add genre remix capability for style transformations without plot loss
-3. Improve streaming UX with an explicit stop-generation control
-4. Persist stories in SQLite for session continuity
-5. Extend character tracking to include relationship evolution over time
+Allow users to select from a list of models — so they can trade off cost and output quality based on their needs.

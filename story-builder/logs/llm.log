@@ -1,2 +1,91 @@
 {"timestamp": "2026-03-31T15:13:02.534008", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.6, "genre": "Fantasy", "prompt_tokens": 148, "completion_tokens": 265, "total_tokens": 413, "latency_ms": 1253}
 {"timestamp": "2026-03-31T15:13:02.917309", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["the old lady"]}
+{"timestamp": "2026-03-31T21:12:06.915540", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "genre": "Sci-Fi", "prompt_tokens": 161, "completion_tokens": 245, "total_tokens": 406, "latency_ms": 1896}
+{"timestamp": "2026-03-31T21:12:07.380697", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["Captain Jaxon Ryder"]}
+{"timestamp": "2026-03-31T21:12:19.571135", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 4, "prompt_tokens": 746, "completion_tokens": 274, "total_tokens": 1020, "latency_ms": 1442}
+{"timestamp": "2026-03-31T21:12:19.937486", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["Captain Jaxon Ryder"]}
+{"timestamp": "2026-03-31T21:12:42.708190", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "genre": "Sci-Fi", "prompt_tokens": 161, "completion_tokens": 258, "total_tokens": 419, "latency_ms": 1465}
+{"timestamp": "2026-03-31T21:12:43.207588", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["Captain Jaxon Lee"]}
+{"timestamp": "2026-03-31T21:12:46.998162", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 4, "prompt_tokens": 772, "completion_tokens": 352, "total_tokens": 1124, "latency_ms": 1625}
+{"timestamp": "2026-03-31T21:12:47.726919", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["Captain Jaxon Lee"]}
+{"timestamp": "2026-03-31T21:14:24.014798", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "genre": "Sci-Fi", "prompt_tokens": 161, "completion_tokens": 227, "total_tokens": 388, "latency_ms": 1557}
+{"timestamp": "2026-03-31T21:14:24.358062", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["Captain Jaxon"]}
+{"timestamp": "2026-03-31T21:14:29.108658", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 4, "prompt_tokens": 721, "completion_tokens": 126, "total_tokens": 847, "latency_ms": 923}
+{"timestamp": "2026-03-31T21:14:29.453848", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["Captain Jaxon"]}
+{"timestamp": "2026-03-31T21:14:36.435509", "call": "stream_continuation", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 3, "chars_generated": 1486, "estimated_tokens": 371, "latency_ms": 1537}
+{"timestamp": "2026-03-31T21:14:36.938843", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:15:19.251129", "call": "stream_continuation", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 5, "chars_generated": 1378, "estimated_tokens": 344, "latency_ms": 1273}
+{"timestamp": "2026-03-31T21:15:19.696476", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:15:23.477925", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 6, "prompt_tokens": 1437, "completion_tokens": 134, "total_tokens": 1571, "latency_ms": 719}
+{"timestamp": "2026-03-31T21:15:23.885131", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:15:26.863504", "call": "stream_continuation", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 5, "chars_generated": 1749, "estimated_tokens": 437, "latency_ms": 1584}
+{"timestamp": "2026-03-31T21:15:27.308930", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:15:30.822929", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 8, "prompt_tokens": 1872, "completion_tokens": 122, "total_tokens": 1994, "latency_ms": 1328}
+{"timestamp": "2026-03-31T21:15:31.364177", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:15:38.576539", "call": "stream_continuation", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 7, "chars_generated": 1938, "estimated_tokens": 484, "latency_ms": 1772}
+{"timestamp": "2026-03-31T21:15:39.352379", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:15:48.246781", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 10, "prompt_tokens": 2350, "completion_tokens": 135, "total_tokens": 2485, "latency_ms": 3063}
+{"timestamp": "2026-03-31T21:15:53.549174", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:16:12.620803", "call": "stream_continuation", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 9, "chars_generated": 2616, "estimated_tokens": 654, "latency_ms": 2058}
+{"timestamp": "2026-03-31T21:16:13.114305", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:16:26.797433", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 18.0, "source": "header"}
+{"timestamp": "2026-03-31T21:16:40.797486", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 14.0, "source": "header"}
+{"timestamp": "2026-03-31T21:16:41.269273", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 18.0, "source": "header"}
+{"timestamp": "2026-03-31T21:16:42.255917", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 12.0, "source": "header"}
+{"timestamp": "2026-03-31T21:16:54.185240", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 3.0, "source": "header"}
+{"timestamp": "2026-03-31T21:16:57.260387", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 13.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:00.172878", "call": "get_choices_response", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 10.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:09.649341", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 16.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:10.723645", "call": "get_choices_response", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 14.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:10.771161", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 10, "prompt_tokens": 2367, "completion_tokens": 153, "total_tokens": 2520, "latency_ms": 1252}
+{"timestamp": "2026-03-31T21:17:15.510995", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 2, "names": ["Captain Jaxon", "Ship's AI"]}
+{"timestamp": "2026-03-31T21:17:21.347697", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 7.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:25.480544", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 4.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:30.831556", "call": "get_choices_response", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 1713.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:33.509008", "call": "get_choices_response", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 1710.0, "source": "header"}
+{"timestamp": "2026-03-31T21:17:57.601665", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "genre": "Fantasy", "prompt_tokens": 159, "completion_tokens": 265, "total_tokens": 424, "latency_ms": 1325}
+{"timestamp": "2026-03-31T21:17:57.993758", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["Arinthal"]}
+{"timestamp": "2026-03-31T21:18:11.708588", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 349.0, "source": "header"}
+{"timestamp": "2026-03-31T21:18:14.258551", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 346.0, "source": "header"}
+{"timestamp": "2026-03-31T21:18:17.010194", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 344.0, "source": "header"}
+{"timestamp": "2026-03-31T21:18:17.389037", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 1093.0, "source": "header"}
+{"timestamp": "2026-03-31T21:18:18.061690", "call": "get_choices_response", "event": "rate_limit_retry", "attempt": 0, "wait_seconds": 477.0, "source": "header"}
+{"timestamp": "2026-03-31T21:24:00.438270", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 750.0, "source": "header"}
+{"timestamp": "2026-03-31T21:24:00.885649", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 750.0, "source": "header"}
+{"timestamp": "2026-03-31T21:24:01.160170", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 750.0, "source": "header"}
+{"timestamp": "2026-03-31T21:26:15.340046", "call": "get_choices_response", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 750.0, "source": "header"}
+{"timestamp": "2026-03-31T21:36:30.659760", "call": "stream_continuation", "event": "rate_limit_retry", "attempt": 1, "wait_seconds": 1401.0, "source": "header"}
+{"timestamp": "2026-03-31T21:40:40.757438", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 763.0}
+{"timestamp": "2026-03-31T21:40:48.336303", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 756.0}
+{"timestamp": "2026-03-31T21:46:12.962060", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 432.0}
+{"timestamp": "2026-03-31T21:46:31.786670", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 408.0}
+{"timestamp": "2026-03-31T21:46:42.998703", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 396.0}
+{"timestamp": "2026-03-31T21:47:08.450785", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 371.0}
+{"timestamp": "2026-03-31T21:50:43.579282", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 159.0}
+{"timestamp": "2026-03-31T21:54:47.424585", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "genre": "Fantasy", "prompt_tokens": 145, "completion_tokens": 281, "total_tokens": 426, "latency_ms": 2008}
+{"timestamp": "2026-03-31T21:54:47.477963", "call": "extract_characters", "event": "rate_limit_wait_too_long", "wait_seconds": 713.0}
+{"timestamp": "2026-03-31T21:54:47.478060", "call": "extract_characters", "event": "silent_failure", "error": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kmynsnpef1sare9am555j2m0` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 100000, Requested 825. Please try again in 11m52.8s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}"}
+{"timestamp": "2026-03-31T21:54:57.218226", "call": "get_choices_response", "event": "rate_limit_wait_too_long", "wait_seconds": 871.0}
+{"timestamp": "2026-03-31T21:55:07.425141", "call": "stream_continuation", "event": "rate_limit_wait_too_long", "wait_seconds": 725.0}
+{"timestamp": "2026-03-31T21:56:36.993984", "call": "get_choices_response", "event": "rate_limit_wait_too_long", "wait_seconds": 1413.0}
+{"timestamp": "2026-03-31T21:56:46.921006", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 891.0}
+{"timestamp": "2026-03-31T21:56:56.924455", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 880.0}
+{"timestamp": "2026-03-31T21:56:59.282138", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 877.0}
+{"timestamp": "2026-03-31T21:57:00.872004", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 876.0}
+{"timestamp": "2026-03-31T21:58:07.266552", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 814.0}
+{"timestamp": "2026-03-31T21:59:09.903335", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 752.0}
+{"timestamp": "2026-03-31T22:00:35.773997", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 666.0}
+{"timestamp": "2026-03-31T22:01:55.728143", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 582.0}
+{"timestamp": "2026-03-31T22:04:01.890578", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 458.0}
+{"timestamp": "2026-03-31T22:05:03.323688", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 396.0}
+{"timestamp": "2026-03-31T22:07:14.176915", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 264.0}
+{"timestamp": "2026-03-31T22:09:38.217666", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 120.0}
+{"timestamp": "2026-03-31T22:10:27.542972", "call": "generate_opening", "event": "rate_limit_wait_too_long", "wait_seconds": 70.0}
+{"timestamp": "2026-03-31T22:12:08.308886", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "genre": "Fantasy", "prompt_tokens": 148, "completion_tokens": 236, "total_tokens": 384, "latency_ms": 1015}
+{"timestamp": "2026-03-31T22:12:08.348906", "call": "extract_characters", "event": "rate_limit_wait_too_long", "wait_seconds": 674.0}
+{"timestamp": "2026-03-31T22:12:08.349011", "call": "extract_characters", "event": "silent_failure", "error": "Error code: 429 - {'error': {'message': 'Rate limit reached for model `llama-3.3-70b-versatile` in organization `org_01kmynsnpef1sare9am555j2m0` service tier `on_demand` on tokens per day (TPD): Limit 100000, Used 100000, Requested 780. Please try again in 11m13.92s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing', 'type': 'tokens', 'code': 'rate_limit_exceeded'}}"}
+{"timestamp": "2026-03-31T22:12:10.979395", "call": "get_choices_response", "event": "rate_limit_wait_too_long", "wait_seconds": 1481.0}
+{"timestamp": "2026-03-31T22:17:57.383061", "call": "generate_opening", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "genre": "Fantasy", "prompt_tokens": 149, "completion_tokens": 258, "total_tokens": 407, "latency_ms": 1517}
+{"timestamp": "2026-03-31T22:17:57.842436", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["The Old Lady"]}
+{"timestamp": "2026-03-31T22:18:02.772366", "call": "get_choices_response", "model": "llama-3.3-70b-versatile", "temperature": 0.8, "message_count": 4, "prompt_tokens": 754, "completion_tokens": 179, "total_tokens": 933, "latency_ms": 1227}
+{"timestamp": "2026-03-31T22:18:02.993113", "call": "extract_characters", "model": "llama-3.3-70b-versatile", "characters_found": 1, "names": ["The Old Lady"]}

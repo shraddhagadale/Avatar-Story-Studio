@@ -17,11 +17,6 @@ def estimate_tokens(text: str) -> int:
     Fast estimate: ~4 characters per token for English prose.
     Accuracy: ~85-90%. Good enough for budget decisions.
 
-    Why not use a proper tokenizer (tiktoken, HuggingFace)?
-    - tiktoken is OpenAI-specific
-    - HuggingFace tokenizer adds 200MB+ to dependencies
-    - Groq returns actual token counts in response.usage — use that for
-      precise tracking if needed; this is just a pre-call guard
     """
     return max(1, len(text) // 4)
 
@@ -74,6 +69,23 @@ def build_messages(system_prompt: str, segments: list[dict]) -> list[dict]:
         messages.pop(1)  # drop oldest story segment after system prompt
 
     return messages
+
+
+def split_segments_for_summary(segments: list[dict]) -> tuple[list[dict], list[dict]]:
+    """
+    Splits segments by token count — removes oldest segments until remaining
+    segments are under TOKEN_SUMMARIZE_THRESHOLD. More principled than splitting
+    by count since segments vary widely in length.
+    """
+    recent = list(segments)
+    oldest = []
+
+    while recent and estimate_messages_tokens(
+        [{"role": s["role"], "content": s["content"]} for s in recent]
+    ) > TOKEN_TRIM_THRESHOLD // 2:
+        oldest.insert(0, recent.pop(0))
+
+    return oldest, recent
 
 
 def get_full_story_text(segments: list[dict]) -> str:

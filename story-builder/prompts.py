@@ -31,7 +31,7 @@ CONSISTENCY RULES (follow these strictly):
 6. Do not introduce new characters, locations, or abilities without narrative grounding.{char_section}
 
 WRITING STYLE:
-- Third-person past tense narrative
+- Match the narrative voice and tense established in the opening paragraph
 - Vivid sensory details (sound, smell, texture — not just visuals)
 - Show don't tell: reveal character through action and dialogue
 - Each continuation: 1–2 paragraphs, approximately 150–250 words
@@ -57,9 +57,7 @@ Write only the story paragraph. No title, no preamble, no meta-commentary."""
 
 # ── Branching choices ─────────────────────────────────────────────────────────
 
-CHOICES_INSTRUCTION = """Continue the story with 1–2 paragraphs (150–200 words), then present exactly 3 branching paths.
-
-After your story continuation, add:
+CHOICES_INSTRUCTION = """Based on the story so far, present exactly 3 branching paths the story could take next.
 
 **Choice A — [short title]:** [one sentence describing this path]
 **Choice B — [short title]:** [one sentence describing this path]
@@ -70,7 +68,25 @@ Guidelines for the choices:
 - Choice B: a balanced middle ground
 - Choice C: the bold, risky, or unexpected path
 - Each choice must be meaningfully different and consistent with the story world
-- Do NOT write the continuation for any choice — only the one-sentence description"""
+- Each choice must respect all established facts, character abilities, and world rules
+- Do NOT write any story continuation — only the three one-sentence descriptions"""
+
+
+# ── Summarization ────────────────────────────────────────────────────────────
+
+def build_summary_prompt(story_text: str) -> str:
+    return f"""Summarize the following story events into a compact 2-3 sentence recap.
+
+Include:
+- Character names and their current situation
+- Key events that happened
+- Any unresolved tension or open questions
+- Established world facts that must be remembered
+
+Write in past tense. Output only the summary — no preamble, no commentary.
+
+Story events to summarize:
+{story_text}"""
 
 
 # ── Character extraction ──────────────────────────────────────────────────────
@@ -80,10 +96,21 @@ CHARACTER_EXTRACTION_SYSTEM = (
     "You only output valid JSON — no markdown, no explanation, no code blocks."
 )
 
-def build_character_extraction_prompt(story_text: str) -> str:
+def build_character_extraction_prompt(story_text: str, existing: list[dict] | None = None) -> str:
     # Only send the last ~3000 chars to keep this call cheap
     excerpt = story_text[-3000:] if len(story_text) > 3000 else story_text
-    return f"""Extract all named characters from this story excerpt.
+
+    existing_section = ""
+    if existing:
+        existing_lines = "\n".join(f"  - {c['name']}: {c['description']}" for c in existing)
+        existing_section = f"""
+Existing known characters (preserve these, update description only if new info found):
+{existing_lines}
+
+"""
+
+    return f"""Extract all named characters from this story excerpt.{existing_section}
+Return the full merged list — existing characters plus any new ones found.
 
 Return ONLY this exact JSON format:
 {{"characters": [{{"name": "Character Name", "description": "one sentence: role + defining trait"}}]}}

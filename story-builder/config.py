@@ -45,4 +45,5 @@ MAX_TOKENS_OUTPUT = 1024
 # Token budget for history (conservative — free tier is 6K TPM total)
 # ~4 chars per token estimate; keep total request under ~4000 tokens
 TOKEN_WARN_THRESHOLD = 3000    # show warning in UI
-TOKEN_TRIM_THRESHOLD = 4500    # start trimming oldest segments
+TOKEN_SUMMARIZE_THRESHOLD = 4000  # summarize oldest segments before trim
+TOKEN_TRIM_THRESHOLD = 4500    # last resort — hard trim if summarization wasn't enough

@@ -6,9 +6,9 @@ UI layer only: reads from session_state, calls helpers, updates state.
 import streamlit as st
 from groq import RateLimitError, APIConnectionError
 
-from config import GENRES, GENRE_RULES, TOKEN_WARN_THRESHOLD
-from context_manager import build_messages, get_full_story_text, estimate_tokens
-from llm import generate_opening, stream_continuation, get_choices_response, extract_characters
+from config import GENRES, GENRE_RULES, TOKEN_WARN_THRESHOLD, TOKEN_SUMMARIZE_THRESHOLD
+from context_manager import build_messages, get_full_story_text, estimate_tokens, split_segments_for_summary
+from llm import generate_opening, stream_continuation, get_choices_response, extract_characters, summarize_segments
 from prompts import build_system_prompt, CHOICES_INSTRUCTION
 from utils import genre_badge, parse_choices, export_to_markdown, safe_filename
 
@@ -586,14 +586,45 @@ def _show_and_clear_error():
 
 def _handle_llm_error(e: Exception):
     if isinstance(e, RateLimitError):
-        st.session_state.error_msg = (
-            "⏱️ Rate limit reached — Groq free tier allows ~30 requests/min. "
-            "Wait a moment and try again."
-        )
+        retry_after = None
+        if hasattr(e, "response") and e.response is not None:
+            retry_after = e.response.headers.get("retry-after")
+        wait_msg = f"Try again in ~{int(float(retry_after))}s." if retry_after else "Try again in a moment."
+        st.session_state.error_msg = f"Rate limit reached for Groq free tier. {wait_msg}"
     elif isinstance(e, APIConnectionError):
         st.session_state.error_msg = "🔌 Connection error. Check your internet connection."
     else:
         st.session_state.error_msg = f"Something went wrong: {str(e)}"
+
+
+def _maybe_summarize():
+    """
+    When story context approaches the token limit, summarize the oldest segments
+    into a compact recap instead of hard-trimming. Triggered at TOKEN_SUMMARIZE_THRESHOLD.
+    Splits by token count (not arbitrary half) for a principled reduction.
+    Verifies token count after summarizing — hard trim in build_messages() is the fallback.
+    """
+    story_text = get_full_story_text(st.session_state.segments)
+    if estimate_tokens(story_text) >= TOKEN_SUMMARIZE_THRESHOLD:
+        old, recent = split_segments_for_summary(st.session_state.segments)
+        if not old:
+            return  # nothing to summarize — let hard trim handle it
+        turn_count = len(st.session_state.segments)
+        summary_text = summarize_segments(old)
+        summary_segment = {
+            "role": "assistant",
+            "content": f"[Story so far — after {turn_count} turns: {summary_text}]"
+        }
+        st.session_state.segments = [summary_segment] + recent
+
+        # Verify token count came down after summarizing
+        after_text = get_full_story_text(st.session_state.segments)
+        if estimate_tokens(after_text) >= TOKEN_SUMMARIZE_THRESHOLD:
+            # Summary didn't reduce enough — hard trim in build_messages() handles the rest
+            import logging
+            logging.getLogger("llm").warning(
+                f"Summarization insufficient — still at ~{estimate_tokens(after_text)} tokens after summary"
+            )
 
 
 # Genre metadata — used both for the card grid and for the guide panel
@@ -648,7 +679,6 @@ def _confirm_new_story_dialog():
 
 if not st.session_state.story_started:
 
-    # Hero — gradient heading, myavatar.ai style
     st.markdown("""
     <div class="ma-hero" style="text-align:center">
         <h1 style="font-family:'Inter',sans-serif;font-weight:800;letter-spacing:-1px">
@@ -710,6 +740,8 @@ if not st.session_state.story_started:
         </div>
         """, unsafe_allow_html=True)
 
+        _show_and_clear_error()
+
         if st.button("Start the Story →", type="primary", use_container_width=True):
             if not title.strip():
                 st.error("Please enter a story title.")
@@ -729,8 +761,6 @@ if not st.session_state.story_started:
                     except Exception as e:
                         _handle_llm_error(e)
                         st.rerun()
-
-        _show_and_clear_error()
 
     with col_guide:
         g = st.session_state.genre
@@ -764,17 +794,10 @@ else:
 
     # ── Main content ──────────────────────────────────────────────────────────
 
-    _show_and_clear_error()
 
     # Dialog trigger — fires when New Story button was clicked
     if st.session_state.get("_confirm_new_story"):
         _confirm_new_story_dialog()
-
-    # Token warning — only when approaching the limit
-    story_text = get_full_story_text(st.session_state.segments)
-    est_tokens = estimate_tokens(story_text)
-    if est_tokens > TOKEN_WARN_THRESHOLD:
-        st.warning(f"Story is getting long (~{est_tokens:,} tokens) — oldest turns may be trimmed.")
 
     # ── Story header — title + genre + export + new story on one line ────────
     _genre_meta = GENRE_META[st.session_state.genre]
@@ -835,6 +858,8 @@ else:
     # ── Story segments — natural page flow ────────────────────────────────────
     for seg in st.session_state.segments:
         if seg["role"] == "assistant":
+            if seg["content"].startswith("[Story so far:"):
+                continue  # internal summary — API context only, not displayed
             st.markdown(f'<div class="story-block">{seg["content"]}</div>',
                         unsafe_allow_html=True)
         elif seg["content"] not in ("Continue the story.", ""):
@@ -871,6 +896,8 @@ else:
                 )
                 st.session_state.pending_choices = []
 
+                with st.spinner("Condensing story memory…"):
+                    _maybe_summarize()
                 system_prompt = build_system_prompt(
                     st.session_state.title,
                     st.session_state.genre,
@@ -888,7 +915,7 @@ else:
                         )
                     stream_placeholder.empty()
                     st.session_state.segments.append({"role": "assistant", "content": full_text})
-                    updated = extract_characters(get_full_story_text(st.session_state.segments))
+                    updated = extract_characters(get_full_story_text(st.session_state.segments), st.session_state.characters)
                     if updated:
                         st.session_state.characters = updated
                 except Exception as e:
@@ -925,6 +952,13 @@ else:
         </div>
         """, unsafe_allow_html=True)
 
+        story_text = get_full_story_text(st.session_state.segments)
+        est_tokens = estimate_tokens(story_text)
+        if est_tokens > TOKEN_WARN_THRESHOLD:
+            st.warning(f"Story is getting long (~{est_tokens:,} tokens) — oldest turns may be summarized.")
+
+        _show_and_clear_error()
+
         # Action row: Choices · Continue · Undo — all on one line
         col_choices, col_continue, col_undo = st.columns([3, 3, 2], gap="small")
 
@@ -934,6 +968,8 @@ else:
                     st.session_state.segments.append(
                         {"role": "user", "content": user_input.strip()}
                     )
+                with st.spinner("Condensing story memory…"):
+                    _maybe_summarize()
                 system_prompt = build_system_prompt(
                     st.session_state.title,
                     st.session_state.genre,
@@ -948,18 +984,16 @@ else:
                         story_part, choices = parse_choices(raw)
 
                         if choices:
-                            st.session_state.segments.append(
-                                {"role": "assistant", "content": story_part}
-                            )
+                            if story_part.strip():
+                                st.session_state.segments.append(
+                                    {"role": "assistant", "content": story_part}
+                                )
                             st.session_state.pending_choices = choices
+                            updated = extract_characters(get_full_story_text(st.session_state.segments), st.session_state.characters)
+                            if updated:
+                                st.session_state.characters = updated
                         else:
-                            st.session_state.segments.append(
-                                {"role": "assistant", "content": raw}
-                            )
-
-                        updated = extract_characters(get_full_story_text(st.session_state.segments))
-                        if updated:
-                            st.session_state.characters = updated
+                            st.session_state.error_msg = "Couldn't generate choices — try again."
                     except Exception as e:
                         _handle_llm_error(e)
 
@@ -971,6 +1005,8 @@ else:
                     st.session_state.segments.append(
                         {"role": "user", "content": user_input.strip()}
                     )
+                with st.spinner("Condensing story memory…"):
+                    _maybe_summarize()
                 system_prompt = build_system_prompt(
                     st.session_state.title,
                     st.session_state.genre,
@@ -988,7 +1024,7 @@ else:
                         )
                     stream_placeholder.empty()
                     st.session_state.segments.append({"role": "assistant", "content": full_text})
-                    updated = extract_characters(get_full_story_text(st.session_state.segments))
+                    updated = extract_characters(get_full_story_text(st.session_state.segments), st.session_state.characters)
                     if updated:
                         st.session_state.characters = updated
                 except Exception as e:
