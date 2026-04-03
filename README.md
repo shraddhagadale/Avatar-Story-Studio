@@ -94,5 +94,3 @@ The fix was to read Groq's `retry-after` response header first — if Groq says 
 
 1. Model selection - add a dropdown so users can choose from different models based on their needs. Power users writing long-form fiction may want a larger model; casual users may prefer faster, cheaper completions.
 
-2. Story branching - allow users to fork from any point in the story and explore a different narrative path, with both branches preserved independently. This would make the app feel much closer to a real interactive fiction tool.
-
