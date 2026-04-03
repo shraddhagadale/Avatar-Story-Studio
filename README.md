@@ -72,9 +72,8 @@ system prompt → story history (user + assistant turns) → current action
 
 As the story grows, token usage is managed in three stages:
 
-1. **≥ 3,000 tokens** — UI warns the user the story is getting long
-2. **≥ 4,000 tokens** — oldest segments are summarized into a compact recap block and replaced. The summary is injected into the API context but never displayed to the user.
-3. **≥ 4,500 tokens** — hard trim as a last resort if summarization was insufficient
+1. **≥ 4,000 tokens** — oldest segments are summarized into a compact recap block and replaced. The summary is injected into the API context but never displayed to the user.
+2. **≥ 4,500 tokens** — hard trim as a last resort if summarization was insufficient
 
 This preserves plot memory rather than silently dropping early story events.
 
